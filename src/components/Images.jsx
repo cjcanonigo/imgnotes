@@ -3,10 +3,12 @@ import { Grid, Paper, IconButton, TextField } from "@material-ui/core";
 import ChevronLeft from "@material-ui/icons/ChevronLeft";
 import ChevronRight from "@material-ui/icons/ChevronRight";
 import CloudDownload from "@material-ui/icons/CloudDownload";
+import Papa from "papaparse";
 
 class Images extends Component {
   state = {
     imageData: [],
+    imageLocData: [],
     currImg: 0,
     currImgHeight: 0,
     currImgWidth: 0
@@ -17,28 +19,25 @@ class Images extends Component {
     // check the regex: https://regexr.com/
     // Check the require.context from webpack:
     //https://medium.com/@godban/loading-static-and-dynamic-images-with-webpack-8a933e82cb1e
-    this.state.imgs = this.imgAll(
-      require.context("./../imgs", false, /\.(jpe?g|png|svg)$/)
+    let imgs = this.imgAll(
+      require.context("./../../public/imgs", false, /\.(jpe?g|png|svg)$/)
     );
 
-    let imgData = this.state.imgs.map(imgLoc => {
-      let locString = String(imgLoc).replace("/static/media/", "");
-      let subString = locString
-        .substring(0, locString.lastIndexOf("."))
-        .replace(/\.(.*$)/, "");
-      let extension = locString.substring(
-        locString.lastIndexOf("."),
-        locString.length
-      );
-      let imgName = subString + extension;
-      return {
-        imgLoc: imgLoc,
-        imgName: imgName,
+    let imageLocData = [];
+    let imageData = [];
+    for (let i = 0; i < imgs.length; i++) {
+      let splitStr = String(imgs[i])
+        .replace("/static/media/", "")
+        .split(".");
+      imageLocData.push(imgs[i]);
+      imageData.push({
+        imgName: splitStr[0] + "." + splitStr[2],
         note: ""
-      };
-    });
+      });
+    }
 
-    this.state.imageData = imgData;
+    this.state.imageData = imageData;
+    this.state.imageLocData = imageLocData;
   }
 
   imgAll = r => {
@@ -79,73 +78,18 @@ class Images extends Component {
     });
   };
 
-  convertArrayOfObjectsToCSV = args => {
-    var result, ctr, keys, columnDelimiter, lineDelimiter, data;
-
-    data = args.data || null;
-    if (data == null || !data.length) {
-      return null;
-    }
-
-    columnDelimiter = args.columnDelimiter || ",";
-    lineDelimiter = args.lineDelimiter || "\n";
-    keys = Object.keys(data[0]);
-    console.log("keys: ", keys);
-    if (args.keys !== null) {
-      keys = args.keys;
-    }
-    result = "";
-    result += keys.join(columnDelimiter);
-    result += lineDelimiter;
-    // console.log(keys);
-
-    data.forEach(function(item) {
-      ctr = 0;
-      keys.forEach(function(key) {
-        if (ctr > 0) result += columnDelimiter;
-
-        result += item[key];
-        ctr++;
-      });
-      result += lineDelimiter;
-    });
-
-    return result;
-  };
-  handleDownload = args => {
-    console.log("download clicked!");
-    let data = this.state.imageData;
-
-    let filename, link;
-    var csv = this.convertArrayOfObjectsToCSV({
-      data: this.state.imageData,
-      keys: ["imgName", "note"]
-    });
-    if (csv == null) return;
-
-    filename = args.filename || "export.csv";
-
-    if (!csv.match(/^data:text\/csv/i)) {
-      csv = "data:text/csv;charset=utf-8," + csv;
-    }
-    data = encodeURI(csv);
-
-    link = document.createElement("a");
-    link.setAttribute("href", data);
-    link.setAttribute("download", filename);
+  handleDownload = () => {
+    let csv = Papa.unparse(this.state.imageData);
+    let link = document.createElement("a");
+    link.setAttribute("href", "data:text/csv;charset=utf-8," + encodeURI(csv));
+    link.setAttribute("download", "export.csv");
     link.click();
-    console.log(this.state.imageData);
   };
-
-  // handleDownload = () => {
-  //   console.log("Download clicked!");
-  //   this.downloadCSV();
-  // };
 
   render() {
     return (
       <Grid container>
-        <Grid item xs={3}>
+        <Grid item xs={6} md={5}>
           <Paper style={{ padding: 16, margin: 16 }}>
             <IconButton color="primary" onClick={this.handlePrevButton}>
               <ChevronLeft />
@@ -170,10 +114,10 @@ class Images extends Component {
             />
           </Paper>
         </Grid>
-        <Grid item xs={3} style={{ padding: 16 }}>
+        <Grid item xs={6} md={7} style={{ padding: 16 }}>
           <img
             onLoad={this.handleImgLoad}
-            src={this.state.imageData[this.state.currImg].imgLoc}
+            src={this.state.imageLocData[this.state.currImg]}
           />
         </Grid>
       </Grid>
