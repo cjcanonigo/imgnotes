@@ -22,8 +22,18 @@ class Images extends Component {
     );
 
     let imgData = this.state.imgs.map(imgLoc => {
+      let locString = String(imgLoc).replace("/static/media/", "");
+      let subString = locString
+        .substring(0, locString.lastIndexOf("."))
+        .replace(/\.(.*$)/, "");
+      let extension = locString.substring(
+        locString.lastIndexOf("."),
+        locString.length
+      );
+      let imgName = subString + extension;
       return {
         imgLoc: imgLoc,
+        imgName: imgName,
         note: ""
       };
     });
@@ -40,7 +50,6 @@ class Images extends Component {
     let newArr = this.state.imageData;
     newArr[this.state.currImg].note = newNote;
     this.setState({ imageData: newArr });
-    console.log(change.target.value);
     console.log(this.state.imageData);
   };
 
@@ -71,7 +80,7 @@ class Images extends Component {
   };
 
   convertArrayOfObjectsToCSV = args => {
-    var result, ctr, keys, columnDelimiter, lineDelimiter, data, headers;
+    var result, ctr, keys, columnDelimiter, lineDelimiter, data;
 
     data = args.data || null;
     if (data == null || !data.length) {
@@ -80,11 +89,13 @@ class Images extends Component {
 
     columnDelimiter = args.columnDelimiter || ",";
     lineDelimiter = args.lineDelimiter || "\n";
-
     keys = Object.keys(data[0]);
+    console.log("keys: ", keys);
+    if (args.keys !== null) {
+      keys = args.keys;
+    }
     result = "";
-    headers = args.headers || keys;
-    result += headers.join(columnDelimiter);
+    result += keys.join(columnDelimiter);
     result += lineDelimiter;
     // console.log(keys);
 
@@ -104,16 +115,11 @@ class Images extends Component {
   handleDownload = args => {
     console.log("download clicked!");
     let data = this.state.imageData;
-    data.forEach(item => {
-      //Strip out /static/media/
-      console.log(item["imgLoc"]);
-      // item["imgLoc"] = item["imgLoc"].str.replace("/static/media/", "");
-    });
 
     let filename, link;
     var csv = this.convertArrayOfObjectsToCSV({
       data: this.state.imageData,
-      headers: ["imageName", "Notes"]
+      keys: ["imgName", "note"]
     });
     if (csv == null) return;
 
